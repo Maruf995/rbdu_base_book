@@ -1,0 +1,103 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-0 mt-3">
+            <div class="card-header bg-primary text-white py-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-plus"></i> 
+                    {% if is_update %}Редактирование карточки книги{% else %}Ввод новых данных о книге{% endif %}
+                </h4>
+            </div>
+            
+            <div class="card-body p-4">
+                
+                {% if existing_book_id %}
+                <div class="alert alert-danger shadow-sm border-danger mb-4">
+                    <h5 class="alert-heading fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Внимание! Конфликт инвентарного номера
+                    </h5>
+                    <p class="mb-3">Книга с инвентарным номером <strong>{{ request.POST.inventory_number }}</strong> уже существует в базе данных. Вы не можете создать дубликат.</p>
+                    <hr>
+                    <p class="mb-2 small text-muted">Вы хотите обновить существующую книгу или отменить добавление?</p>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'book_update' existing_book_id %}" class="btn btn-warning fw-bold text-dark">
+                            <i class="bi bi-pencil-square"></i> Пересохранить (Открыть старую карточку)
+                        </a>
+                        <a href="{% url 'book_list' %}" class="btn btn-outline-danger">Отменить ввод</a>
+                    </div>
+                </div>
+                {% endif %}
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row bg-light p-3 rounded mb-3 border">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-bold text-secondary text-uppercase small">{{ form.address.label }} (Местонахождение)</label>
+                            {{ form.address }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary text-uppercase small">{{ form.section.label }}</label>
+                            {{ form.section }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.author.label }}</label>
+                        {{ form.author }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{{ form.title.label }}</label>
+                        {{ form.title }}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-danger">{{ form.inventory_number.label }}</label>
+                            {{ form.inventory_number }}
+                            {% if form.inventory_number.errors and not existing_book_id %}
+                                <div class="text-danger small mt-1">{{ form.inventory_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-primary">{{ form.cipher.label }}</label>
+                            {{ form.cipher }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.publication_year.label }}</label>
+                            {{ form.publication_year }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">{{ form.note.label }}</label>
+                            {{ form.note }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.cost.label }}</label>
+                            <div class="input-group">
+                                {{ form.cost }}
+                                <span class="input-group-text">сом</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'book_list' %}" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-arrow-left"></i> Вернуться в каталог
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold btn-lg shadow-sm">
+                            <i class="bi bi-save"></i> 
+                            {% if is_update %}Сохранить изменения{% else %}Добавить книгу в базу{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
