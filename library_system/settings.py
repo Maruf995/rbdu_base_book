@@ -23,16 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
-# SECURITY WARNING: don't run with debug turned on in production!
-
 SECRET_KEY = os.environ.get('SECRET_KEY', 'default-unsafe-key')
-# Если .env нет, по умолчанию включаем DEBUG=True для локальной работы
+
 DEBUG = os.environ.get('DEBUG', 'True') == 'True' 
-# Если .env нет, по умолчанию разрешаем локальные адреса
+
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-
-# Application definition
+csrf_trusted_str = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_str.split(',') if origin.strip()]
 
 INSTALLED_APPS = [
     'jazzmin',

@@ -3,18 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Библиотека - Ввод данных</title>
+    <title>Тандоо - Библиотека им. К. Баялинова</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'book_list' %}"><i class="bi bi-book"></i> Библиотечная Система (Тандоо)</a>
+
+    <!-- НАВИГАЦИЯ / ШАПКА -->
+    <nav class="navbar navbar-dark bg-primary mb-4 py-3">
+        <div class="container d-flex justify-content-between align-items-center">
+            
+            <!-- Левая часть: Заголовок и описание -->
+            <div>
+                <a href="{% url 'book_list' %}" class="text-decoration-none">
+                    <h1 class="m-0 text-white fs-2 fw-bold"><i class="bi bi-book"></i> Тандоо</h1>
+                </a>
+                <div class="text-white-50 small mt-1">
+                    Система ввода электронного списка, 
+                    <a href="https://rbdu.kg" target="_blank" class="text-white text-decoration-none border-bottom border-secondary">
+                        Библиотека им. К. Баялинова
+                    </a> 
+                    <span class="mx-1">|</span> Автор <span class="mx-1">|</span> 
+                    <a href="https://github.com/Maruf-git" target="_blank" class="text-white text-decoration-none fw-bold">
+                        GitHub
+                    </a>
+                </div>
+            </div>
+
+            <!-- Правая часть: Кнопка -->
+            <div>
+                <button type="button" class="btn btn-light btn-sm fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#statsModal">
+                    <i class="bi bi-bar-chart-fill"></i> Статистика
+                </button>
+            </div>
+
         </div>
     </nav>
+
+    <!-- КОНТЕНТ (выводится из других файлов) -->
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО СТАТИСТИКИ -->
+    <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="statsModalLabel">
+                        <i class="bi bi-pie-chart"></i> Статистика
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="m-0">Общее количество книг:</h6>
+                        <span class="badge bg-success fs-6">{{ total_books|default:"0" }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3 text-muted">По категориям:</h6>
+                    <ul class="list-group mb-2">
+                        {% for category in categories_stats %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ category.name }}
+                                <span class="badge bg-primary rounded-pill">{{ category.total }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-center text-muted">
+                                <em>Нет данных</em>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
