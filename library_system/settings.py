@@ -23,14 +23,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
+# SECURITY WARNING: don't run with debug turned on in production!
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'default-unsafe-key')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True' 
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-csrf_trusted_str = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost')
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_str.split(',') if origin.strip()]
+
+# Application definition
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -79,23 +81,23 @@ WSGI_APPLICATION = 'library_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.environ.get('POSTGRES_DB', 'library_db'),
-#         'USER': os.environ.get('POSTGRES_USER', 'lib_admin'),
-#         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'strong_db_password'),
-#         'HOST': os.environ.get('POSTGRES_HOST', 'db'),
-#         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': os.environ.get('POSTGRES_HOST'),
+        'PORT': os.environ.get('POSTGRES_PORT'),
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -131,12 +133,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
 STATIC_URL = 'static/'
+
+# 1. ОТСЮДА Django будет БРАТЬ ваш логотип
+STATICFILES_DIRS = [
+    BASE_DIR / 'static_dev',
+]
+
+# 2. СЮДА Django будет СКЛАДЫВАТЬ всё вместе (и админку, и ваш логотип)
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'

@@ -1,26 +1,34 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Book, Section
 from .forms import BookForm
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
 import openpyxl
+from django.http import Http404
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.http import HttpResponse
+
+def reader_home(request):
+    """Главная страница читателя: красивый поиск и плитка категорий"""
+    sections = Section.objects.annotate(total=Count('book')).filter(total__gt=0)
+    return render(request, 'catalog/reader_home.html', {'sections': sections})
 
 def book_list(request):
     books = Book.objects.all()
     sections = Section.objects.all()
     
-    # НОВОЕ: Получаем список всех существующих годов (исключая пустые), уникальные значения, сортируем по убыванию (новые сверху)
     years = Book.objects.exclude(publication_year__isnull=True).values_list('publication_year', flat=True).distinct().order_by('-publication_year')
 
-    # Получаем параметры с формы
+    # Получаем параметры фильтрации
     query = request.GET.get('q') 
     section_id = request.GET.get('section')
     inv_num = request.GET.get('inv_num') 
-    year = request.GET.get('year') # Выбранный год из списка
+    year = request.GET.get('year') 
     sort_by = request.GET.get('sort_by') 
 
-    # Фильтрация
+    # [Блок фильтрации остается прежним]
     if query:
         books = books.filter(Q(title__icontains=query) | Q(author__icontains=query))
     if section_id:
@@ -30,24 +38,61 @@ def book_list(request):
     if year: 
         books = books.filter(publication_year=year)
         
-    # СОРТИРОВКА (теперь по новым годам по умолчанию)
     if sort_by == 'author':
         books = books.order_by('author')
     elif sort_by == 'title':
         books = books.order_by('title')
     elif sort_by == 'year_asc':
-        books = books.order_by('publication_year') # Старые сначала
+        books = books.order_by('publication_year') 
     else:
-        # ПО УМОЛЧАНИЮ (если ничего не выбрано или выбрано year_desc):
         books = books.order_by('-publication_year', 'title')
 
+    # --- НАЧАЛО БЛОКА ПАГИНАЦИИ ---
+    paginator = Paginator(books, 20) # По 20 книг на страницу
+    page_number = request.GET.get('page')
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1) # Если 'page' не число, даем первую страницу
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages) # Если страница за пределами — последнюю
+
+    # Трюк: сохраняем GET-параметры фильтров для ссылок пагинации
+    get_params = request.GET.copy()
+    if 'page' in get_params:
+        del get_params['page']
+    url_params = get_params.urlencode() # Превратит фильтры в строку вида "q=привет&year=2024"
+    # --- КОНЕЦ БЛОКА ПАГИНАЦИИ ---
+
+    total_books = Book.objects.count()
+    categories_stats = Section.objects.annotate(total=Count('book')).filter(total__gt=0)
+
     context = {
-        'books': books,
+        'books': page_obj,          # Важно! Передаем объект страницы вместо всего QuerySet
         'sections': sections,
-        'years': years, # Передаем собранные года в шаблон
+        'years': years,
+        'total_books': total_books,      
+        'categories_stats': categories_stats, 
+        'url_params': url_params,   # Передаем параметры фильтров в шаблон
     }
     return render(request, 'catalog/book_list.html', context)
 
+def book_detail(request, pk):  
+    from django.shortcuts import get_object_or_404
+    book = get_object_or_404(Book, pk=pk)
+    return render(request, 'catalog/book_detail.html', {'book': book})
+
+@login_required
+def add_section(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            Section.objects.create(name=name)
+    return redirect(request.META.get('HTTP_REFERER', 'book_list'))
+
+
+@login_required
 def book_create(request):
     existing_book_id = None
     if request.method == 'POST':
@@ -56,18 +101,18 @@ def book_create(request):
             form.save()
             return redirect('book_list')
         else:
-            # ПРОВЕРКА НА ДУБЛИКАТ: Если такой инвентарный номер уже есть
             if 'inventory_number' in form.errors:
                 inv_num = request.POST.get('inventory_number')
                 duplicate = Book.objects.filter(inventory_number=inv_num).first()
                 if duplicate:
-                    existing_book_id = duplicate.id # Передаем ID для кнопки "Пересохранить"
+                    existing_book_id = duplicate.id 
     else:
         form = BookForm()
     
     return render(request, 'catalog/book_form.html', {'form': form, 'existing_book_id': existing_book_id})
 
-# НОВАЯ ФУНКЦИЯ ДЛЯ ПЕРЕСОХРАНЕНИЯ (РЕДАКТИРОВАНИЯ)
+
+@login_required
 def book_update(request, pk):
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
@@ -78,62 +123,82 @@ def book_update(request, pk):
     else:
         form = BookForm(instance=book)
     
-    return render(request, 'catalog/book_form.html', {'form': form, 'is_update': True})
+    # НОВОЕ: Передаем 'book': book в контекст, чтобы шаблон знал ID книги
+    return render(request, 'catalog/book_form.html', {'form': form, 'is_update': True, 'book': book})
 
 
+@login_required
+def book_delete(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    if request.method == 'POST':
+        book.delete()
+    return redirect('book_list')
+
+@login_required  # Выгрузка доступна только авторизованным библиотекарям
 def export_books_excel(request):
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="library_books.xlsx"'
+    # 1. Собираем те же фильтры, что используются на главной странице
+    q = request.GET.get('q', '')
+    section_id = request.GET.get('section', '')
+    inv_num = request.GET.get('inv_num', '')
+    year = request.GET.get('year', '')
+    sort_by = request.GET.get('sort_by', 'year_desc')
 
-    workbook = openpyxl.Workbook()
-    worksheet = workbook.active
-    worksheet.title = 'Каталог книг'
+    # 2. ВАЖНО: select_related('section') делает SQL JOIN и решает проблему WORKER TIMEOUT!
+    books = Book.objects.select_related('section').all()
 
-    header_font = Font(name='Arial', bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
-    alt_row_fill = PatternFill(start_color="F8F9FA", end_color="F8F9FA", fill_type="solid")
-    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
-    thin_border = Border(left=Side(style='thin', color='BDC3C7'), right=Side(style='thin', color='BDC3C7'), top=Side(style='thin', color='BDC3C7'), bottom=Side(style='thin', color='BDC3C7'))
+    # Применяем фильтрацию
+    if q:
+        books = books.filter(Q(title__icontains=q) | Q(author__icontains=q))
+    if section_id:
+        books = books.filter(section_id=section_id)
+    if inv_num:
+        books = books.filter(inventory_number__icontains=inv_num)
+    if year:
+        books = books.filter(publication_year=year)
 
-    # ДОБАВЛЕНО "Местонахождение" после года
-    columns = ['Инв. №', 'Название', 'Автор', 'Раздел', 'Шифр', 'Год', 'Местонахождение', 'Стоимость']
-    worksheet.append(columns)
+    # Применяем сортировку
+    if sort_by == 'year_asc':
+        books = books.order_by('publication_year')
+    elif sort_by == 'title':
+        books = books.order_by('title')
+    elif sort_by == 'author':
+        books = books.order_by('author')
+    else:
+        books = books.order_by('-publication_year')
 
-    for cell in worksheet[1]:
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = center_align
-        cell.border = thin_border
+    # 3. Создаем Excel-файл в памяти
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Отфильтрованный каталог"
 
-    # Настраиваем ширину новой колонки (G)
-    col_widths = {'A': 15, 'B': 45, 'C': 30, 'D': 25, 'E': 15, 'F': 10, 'G': 25, 'H': 15}
-    for col, width in col_widths.items():
-        worksheet.column_dimensions[col].width = width
+    # Стилизуем заголовки
+    headers = ["Инв. №", "Шифр", "Автор", "Название", "Раздел", "Год издания", "Местонахождение", "Цена"]
+    ws.append(headers)
 
-    for idx, book in enumerate(Book.objects.all(), start=2):
-        section_name = book.section.name if book.section else ""
-        
-        # ДОБАВЛЕНО: book.address
-        row = [
-            book.inventory_number, book.title, book.author, section_name, 
-            book.cipher, book.publication_year, book.address, book.cost
-        ]
-        worksheet.append(row)
-        
-        for col_num in range(1, len(row) + 1):
-            cell = worksheet.cell(row=idx, column=col_num)
-            cell.border = thin_border
-            
-            # Центрируем 1, 5, 6 и 8 колонки
-            if col_num in [1, 5, 6, 8]: 
-                cell.alignment = center_align
-            else: 
-                cell.alignment = left_align
-                
-            if idx % 2 == 0:
-                cell.fill = alt_row_fill
+    # Заполняем данными (теперь это отработает мгновенно)
+    for book in books:
+        ws.append([
+            book.inventory_number,
+            book.cipher,
+            book.author or "—",
+            book.title,
+            book.section.name if book.section else "—",  # Теперь это НЕ делает запрос в БД в цикле
+            book.publication_year or "—",
+            book.address or "—",
+            book.cost or 0
+        ])
 
-    worksheet.freeze_panes = 'A2'
-    workbook.save(response)
+    # Автоматически настраиваем ширину колонок для красоты
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+    # 4. Формируем HTTP-ответ для скачивания файла
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="books_report.xlsx"'
+    
+    wb.save(response)
     return response
