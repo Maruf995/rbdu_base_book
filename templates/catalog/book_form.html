@@ -18,9 +18,8 @@
                     <h5 class="alert-heading fw-bold">
                         <i class="bi bi-exclamation-triangle-fill"></i> Внимание! Конфликт инвентарного номера
                     </h5>
-                    <p class="mb-3">Книга с инвентарным номером <strong>{{ request.POST.inventory_number }}</strong> уже существует в базе данных. Вы не можете создать дубликат.</p>
+                    <p class="mb-3">Книга с инвентарным номером <strong>{{ request.POST.inventory_number }}</strong> уже существует в базе данных.</p>
                     <hr>
-                    <p class="mb-2 small text-muted">Вы хотите обновить существующую книгу или отменить добавление?</p>
                     <div class="d-flex gap-2">
                         <a href="{% url 'book_update' existing_book_id %}" class="btn btn-warning fw-bold text-dark">
                             <i class="bi bi-pencil-square"></i> Пересохранить (Открыть старую карточку)
@@ -29,6 +28,7 @@
                     </div>
                 </div>
                 {% endif %}
+
                 <form method="POST">
                     {% csrf_token %}
                     
@@ -39,7 +39,12 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-secondary text-uppercase small">{{ form.section.label }}</label>
-                            {{ form.section }}
+                            <div class="input-group">
+                                {{ form.section }}
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -56,9 +61,6 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold text-danger">{{ form.inventory_number.label }}</label>
                             {{ form.inventory_number }}
-                            {% if form.inventory_number.errors and not existing_book_id %}
-                                <div class="text-danger small mt-1">{{ form.inventory_number.errors }}</div>
-                            {% endif %}
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold text-primary">{{ form.cipher.label }}</label>
@@ -88,16 +90,97 @@
 
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="{% url 'book_list' %}" class="btn btn-outline-secondary px-4">
-                            <i class="bi bi-arrow-left"></i> Вернуться в каталог
+                            <i class="bi bi-arrow-left"></i> Вернуться
                         </a>
-                        <button type="submit" class="btn btn-primary px-5 fw-bold btn-lg shadow-sm">
-                            <i class="bi bi-save"></i> 
-                            {% if is_update %}Сохранить изменения{% else %}Добавить книгу в базу{% endif %}
-                        </button>
+                        
+                        <div class="d-flex gap-2">
+                            {% if is_update %}
+                            <button type="button" class="btn btn-outline-danger px-4" data-bs-toggle="modal" data-bs-target="#deleteBookModal">
+                                <i class="bi bi-trash"></i> Удалить книгу
+                            </button>
+                            {% endif %}
+                            
+                            <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
+                                <i class="bi bi-save"></i> 
+                                {% if is_update %}Сохранить{% else %}Добавить книгу{% endif %}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addSectionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить новый раздел</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'add_section' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control" placeholder="Название раздела" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if is_update %}
+<div class="modal fade" id="deleteBookModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Подтверждение удаления
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <p class="text-secondary mb-3">Вы действительно хотите навсегда удалить эту книгу из базы данных? Отменить это действие будет невозможно.</p>
+                
+                <div class="bg-light p-3 rounded border border-danger-subtle border-start-4 border-start-danger">
+                    <div class="mb-2">
+                        <small class="text-uppercase fw-bold text-muted d-block small-tracking mb-1">Название книги</small>
+                        <h6 class="fw-bold text-dark text-break mb-0">«{{ form.instance.title }}»</h6>
+                    </div>
+                    
+                    <div class="row mt-3 pt-2 border-top">
+                        <div class="col-6">
+                            <small class="text-uppercase fw-bold text-muted d-block small-tracking mb-1">Инв. номер</small>
+                            <span class="badge bg-danger-subtle text-danger fw-bold px-2 py-1.5 fs-6">{{ form.instance.inventory_number }}</span>
+                        </div>
+                        {% if form.instance.author %}
+                        <div class="col-6">
+                            <small class="text-uppercase fw-bold text-muted d-block small-tracking mb-1">Автор</small>
+                            <span class="text-secondary fw-semibold text-break d-block">{{ form.instance.author }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Отмена</button>
+                <form method="POST" action="{% url 'book_delete' form.instance.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger fw-bold px-4 shadow-sm">
+                        <i class="bi bi-trash3-fill me-1"></i> Да, удалить окончательно
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -1,6 +1,6 @@
 from django.db import models
 
-# 1. Создаем новую модель для Отраслей знания
+# 1. Создаем новую модель для Отраслей знания (оставляем без изменений)
 class Section(models.Model):
     name = models.CharField(max_length=150, unique=True, verbose_name="Название раздела")
 
@@ -12,12 +12,33 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
+
+# 2. ДОБАВЛЯЕМ новую модель для Адресов / Местонахождений
+class Address(models.Model):
+    name = models.CharField(max_length=150, unique=True, verbose_name="Адрес / Местонахождение")
+
+    class Meta:
+        verbose_name = "Местонахождение"
+        verbose_name_plural = "Местонахождения"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Book(models.Model):
-    address = models.CharField(max_length=150, verbose_name="Адрес", default="Хранение")
+    # 3. МЕНЯЕМ текстовое поле address на связь ForeignKey (выпадающий список)
+    # Вместо default="Хранение" делаем null=True, так как связь теперь идет по ID, а не текстом
+    address = models.ForeignKey(
+        Address, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Адрес"
+    )
     
-    # 2. МЕНЯЕМ поле section на связь ForeignKey (выпадающий список)
+    # Оставляем остальные поля без изменений, строго как у вас:
     section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Разделы (Отрасль знания)")
-    
     author = models.CharField(max_length=200, blank=True, null=True, verbose_name="Фамилия автора")
     title = models.CharField(max_length=300, verbose_name="Название книги")
     inventory_number = models.CharField(max_length=50, unique=True, verbose_name="Инвентариз. №")

@@ -25,14 +25,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
+# SECURITY WARNING: don't run with debug turned on in production!
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'default-unsafe-key')
-# Если .env нет, по умолчанию включаем DEBUG=True для локальной работы
+
 DEBUG = os.environ.get('DEBUG', 'True') == 'True' 
-# Если .env нет, по умолчанию разрешаем локальные адреса
+
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
-# Application definition
+csrf_trusted_str = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_trusted_str.split(',') if origin.strip()]
+
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'reader_home'
+LOGOUT_REDIRECT_URL = 'reader_home'
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -133,12 +141,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
 STATIC_URL = 'static/'
+
+# 1. ОТСЮДА Django будет БРАТЬ ваш логотип
+STATICFILES_DIRS = [
+    BASE_DIR / 'static_dev',
+]
+
+# 2. СЮДА Django будет СКЛАДЫВАТЬ всё вместе (и админку, и ваш логотип)
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
