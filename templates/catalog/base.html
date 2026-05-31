@@ -5,91 +5,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тандоо - Библиотека им. К. Баялинова</title>
-<<<<<<< HEAD
-=======
     
     <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}" >
     
->>>>>>> feature-ok
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
 
-<<<<<<< HEAD
-    <!-- НАВИГАЦИЯ / ШАПКА -->
-    <nav class="navbar navbar-dark bg-primary mb-4 py-3">
-        <div class="container d-flex justify-content-between align-items-center">
-            
-            <!-- Левая часть: Заголовок и описание -->
-            <div>
-                <a href="{% url 'book_list' %}" class="text-decoration-none">
-                    <h1 class="m-0 text-white fs-2 fw-bold"><i class="bi bi-book"></i> Тандоо</h1>
-                </a>
-                <div class="text-white-50 small mt-1">
-                    Система ввода электронного списка, 
-                    <a href="https://rbdu.kg" target="_blank" class="text-white text-decoration-none border-bottom border-secondary">
-                        Библиотека им. К. Баялинова
-                    </a> 
-                    <span class="mx-1">|</span> Автор <span class="mx-1">|</span> 
-                    <a href="https://github.com/Maruf-git" target="_blank" class="text-white text-decoration-none fw-bold">
-                        GitHub
-                    </a>
-                </div>
-            </div>
-
-            <!-- Правая часть: Кнопка -->
-            <div>
-                <button type="button" class="btn btn-light btn-sm fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#statsModal">
-                    <i class="bi bi-bar-chart-fill"></i> Статистика
-                </button>
-            </div>
-
-        </div>
-    </nav>
-
-    <!-- КОНТЕНТ (выводится из других файлов) -->
-=======
     <nav class="navbar navbar-dark bg-primary mb-4 py-3">
         <div class="container d-flex justify-content-between align-items-center">
             
             <div>
                 <a href="{% url 'book_list' %}" class="text-decoration-none d-flex align-items-center">
-                <img src="{% static 'img/logo.png' %}" alt="Логотип" width="40" height="40" class="me-3" style="filter: brightness(0) invert(1);"> 
-                <h1 class="m-0 text-white fs-2 fw-bold">Тандоо</h1>
+                    <img src="{% static 'img/logo.png' %}" alt="Логотип" width="40" height="40" class="me-3" style="filter: brightness(0) invert(1);"> 
+                    <h1 class="m-0 text-white fs-2 fw-bold">Тандоо</h1>
                 </a>
                 <div class="text-white-50 small mt-1">
                     <a href="https://rbdu.kg" target="_blank" class="text-white text-decoration-none border-bottom border-secondary">
-                        Система ввода электронного списка, Библиотека им. К. Баялинова
+                        Система ввода electronic списка, Библиотека им. К. Баялинова
                     </a> 
                     <span class="mx-1">|</span> 
                     <a href="https://github.com/Maruf995" target="_blank" class="text-white text-decoration-none fw-bold">
                         Автор
                     </a>
-                    
                 </div>
             </div>
-            <div class="ms-auto">
-                {% if user.is_authenticated %}
-                    <span class="text-white-50 me-3 small"><i class="bi bi-person-circle"></i> {{ user.username }} (Библиотекарь)</span>
-                    <form action="{% url 'logout' %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-light">Выйти</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-sm btn-light fw-bold text-primary"><i class="bi bi-box-arrow-in-right"></i> Панель сотрудника</a>
-                {% endif %}
+            
+            <div class="d-flex align-items-center gap-3">
+                
+                <button type="button" class="btn btn-light btn-sm fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#statsModal">
+                    <i class="bi bi-bar-chart-fill"></i> Статистика
+                </button>
+
+                <div class="ms-2">
+                    {% if user.is_authenticated %}
+                        <span class="text-white-50 me-3 small"><i class="bi bi-person-circle"></i> {{ user.username }} (Библиотекарь)</span>
+                        <form action="{% url 'logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-light">Выйти</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-sm btn-light fw-bold text-primary"><i class="bi bi-box-arrow-in-right"></i> Панель сотрудника</a>
+                    {% endif %}
+                </div>
+
             </div>
         </div>
     </nav>
 
->>>>>>> feature-ok
     <div class="container">
         {% block content %}{% endblock %}
     </div>
 
-<<<<<<< HEAD
-    <!-- МОДАЛЬНОЕ ОКНО СТАТИСТИКИ -->
     <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -127,8 +95,6 @@
         </div>
     </div>
 
-=======
->>>>>>> feature-ok
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
