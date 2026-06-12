@@ -48,6 +48,9 @@ ALLOWED_HOSTS = os.environ.get(
 
 # Application definition
 
+LOGIN_REDIRECT_URL = "/search/"
+LOGOUT_REDIRECT_URL = "/"
+
 INSTALLED_APPS = [
     'jazzmin',
     'django.contrib.admin',
