@@ -1,0 +1,245 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card shadow border-0 mt-3">
+            <div class="card-header bg-primary text-white py-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    {% if is_update %}Редактирование карточки книги{% else %}Ввод новых данных о книге{% endif %}
+                </h4>
+            </div>
+
+            <div class="card-body p-4">
+
+                {% if existing_book_id %}
+                <div class="alert alert-danger shadow-sm border-danger mb-4">
+                    <h5 class="alert-heading fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Внимание! Конфликт инвентарного номера
+                    </h5>
+                    <p class="mb-3">
+                        Книга с инвентарным номером
+                        <strong>{{ request.POST.inventory_number }}</strong>
+                        уже существует в базе данных.
+                    </p>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'book_update' existing_book_id %}" class="btn btn-warning fw-bold text-dark">
+                            <i class="bi bi-pencil-square"></i> Пересохранить
+                        </a>
+                        <a href="{% url 'book_list' %}" class="btn btn-outline-danger">Отменить ввод</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- ===== MAIN FORM ===== -->
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <!-- ADDRESS -->
+                    <div class="row mb-3">
+
+                        <!-- ADDRESS -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary text-uppercase small">
+                                {{ form.address.label }} (Местонахождение)
+                            </label>
+
+                            <div class="input-group">
+                                {{ form.address }}
+                                <button type="button"
+                                        class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addAddressModal">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION (КАТЕГОРИЯ) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary text-uppercase small">
+                                {{ form.section.label }}
+                            </label>
+
+                            <div class="input-group">
+                                {{ form.section }}
+                                <button type="button"
+                                        class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addSectionModal">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                                        <!-- AUTHOR + TITLE -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.author.label }}</label>
+                        {{ form.author }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{{ form.title.label }}</label>
+                        {{ form.title }}
+                    </div>
+
+                    <!-- MAIN INFO -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-danger">{{ form.inventory_number.label }}</label>
+                            {{ form.inventory_number }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-primary">{{ form.cipher.label }}</label>
+                            {{ form.cipher }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.publication_year.label }}</label>
+                            {{ form.publication_year }}
+                        </div>
+                    </div>
+
+                    <!-- NOTE + COST -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">{{ form.note.label }}</label>
+                            {{ form.note }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.cost.label }}</label>
+                            <div class="input-group">
+                                {{ form.cost }}
+                                <span class="input-group-text">сом</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'book_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">
+                            <i class="bi bi-save"></i>
+                            {% if is_update %}Сохранить{% else %}Добавить книгу{% endif %}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADDRESS MODAL (ВАЖНО: ВНЕ FORM) ===== -->
+<div class="modal fade" id="addAddressModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить местонахождение</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="POST" action="{% url 'add_address' %}">
+                {% csrf_token %}
+
+                <div class="modal-body">
+                    <input type="text"
+                           name="name"
+                           class="form-control"
+                           placeholder="Например: Стеллаж 3, Полка Б"
+                           required>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Отмена
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Сохранить
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="addSectionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить категорию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="POST" action="{% url 'add_section' %}">
+                {% csrf_token %}
+
+                <div class="modal-body">
+                    <input type="text"
+                           name="name"
+                           class="form-control"
+                           placeholder="Например: Физика, Математика"
+                           required>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Отмена
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Сохранить
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+<!-- ===== DELETE MODAL ===== -->
+{% if is_update %}
+<div class="modal fade" id="deleteBookModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Удаление книги</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                Вы уверены, что хотите удалить книгу:
+                <b>{{ form.instance.title }}</b> ?
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Отмена
+                </button>
+
+                <form method="POST" action="{% url 'book_delete' form.instance.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        Удалить
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow border-0 mt-5">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-shield-lock-fill text-primary display-4 mb-3"></i>
+                <h3 class="fw-bold mb-4">Вход для сотрудников</h3>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger small py-2" role="alert">
+                        Неверный логин или пароль!
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-floating mb-3 text-start">
+                        <input type="text" name="username" class="form-control" id="floatingInput" placeholder="Логин" required>
+                        <label for="floatingInput">Логин</label>
+                    </div>
+                    
+                    <div class="form-floating mb-4 text-start">
+                        <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="Пароль" required>
+                        <label for="floatingPassword">Пароль</label>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm mb-2" type="submit">Войти в систему</button>
+                    <a href="{% url 'reader_home' %}" class="btn btn-link link-secondary btn-sm">Вернуться на сайт</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

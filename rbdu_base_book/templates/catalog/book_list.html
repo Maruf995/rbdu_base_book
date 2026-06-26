@@ -1,0 +1,255 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<style>
+    /* Стили для имитации красивого десктопного приложения */
+    .custom-table-container {
+        max-height: 700px;
+        overflow-y: auto;
+        overflow-x: auto; /* Позволяет таблице скроллиться по горизонтали на мобильных */
+        border: 1px solid #c0c4cc;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        background-color: #fff;
+    }
+    .custom-table {
+        width: 100%;
+        min-width: 900px; /* Защита от сильного сжатия на мобильных экранах */
+        table-layout: fixed; /* ВАЖНО: жестко фиксирует ширину колонок */
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.95rem;
+    }
+    .custom-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #2c3e50;
+        color: #ffffff;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 12px 10px;
+        border-bottom: 2px solid #1a252f;
+        border-right: 1px solid #4a5c6d;
+        z-index: 10;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    .custom-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+    .custom-table tbody tr:nth-child(odd) { background-color: #ffffff; }
+    
+    /* Стили для кликабельной строки */
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+    .clickable-row:hover td {
+        background-color: #e2e6ea !important; /* Более явное выделение при наведении */
+        color: #000;
+    }
+
+    .custom-table td {
+        border-right: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+        padding: 8px 12px;
+        vertical-align: middle;
+        
+        /* Обрезаем текст многоточием, если он не влезает */
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .custom-table td:last-child, .custom-table th:last-child { border-right: none; }
+    
+    /* Выделение конкретных колонок */
+    .col-inv { font-weight: 700; color: #d35400; text-align: center; }
+    .col-cipher { color: #2980b9; text-align: center; font-family: monospace; font-size: 1.05rem; font-weight: bold; }
+    .col-title { font-weight: 600; color: #2c3e50; }
+    .col-center { text-align: center; }
+</style>
+
+<div class="row mb-3 align-items-center">
+    <div class="col-md-4">
+        <h3 class="text-primary fw-bold mb-0"><i class="bi bi-journal-text"></i> Каталог книг</h3>
+    </div>
+    <div class="col-md-8 text-end">
+    {% if user.is_authenticated %}
+        <button type="button" class="btn btn-info shadow-sm text-white me-2" data-bs-toggle="modal" data-bs-target="#statsModal">
+            <i class="bi bi-pie-chart-fill"></i> Статистика
+        </button>
+        <a href="{% url 'book_create' %}" class="btn btn-success shadow-sm me-2"><i class="bi bi-plus-circle"></i> Добавить книгу</a>
+        <a href="{% url 'export_books_excel' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary shadow-sm">
+            <i class="bi bi-file-earmark-excel"></i> Выгрузить в Excel
+        </a>
+    {% endif %}
+    </div>
+</div>
+
+<div class="card mb-3 shadow-sm border-0" style="background-color: #e9ecef;">
+    <div class="card-body py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small mb-1">АВТОР / ЗАГЛАВИЕ</label>
+                <input type="text" name="q" class="form-control" placeholder="Поиск..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small mb-1">РАЗДЕЛ</label>
+                <select name="section" class="form-select">
+                    <option value="">Все отрасли</option>
+                    {% for sec in sections %}
+                        <option value="{{ sec.id }}" {% if request.GET.section == sec.id|stringformat:"s" %}selected{% endif %}>
+                            {{ sec.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small mb-1">ИНВ. №</label>
+                <input type="text" name="inv_num" class="form-control" placeholder="Точный номер" value="{{ request.GET.inv_num }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small mb-1">ГОД ИЗДАНИЯ</label>
+                <select name="year" class="form-select">
+                    <option value="">Все года</option>
+                    {% for y in years %}
+                        <option value="{{ y }}" {% if request.GET.year == y|stringformat:"s" %}selected{% endif %}>
+                            {{ y }} г.
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold small mb-1">СОРТИРОВКА</label>
+                <select name="sort_by" class="form-select">
+                    <option value="year_desc" {% if request.GET.sort_by == 'year_desc' or not request.GET.sort_by %}selected{% endif %}>Сначала новые</option>
+                    <option value="year_asc" {% if request.GET.sort_by == 'year_asc' %}selected{% endif %}>Сначала старые</option>
+                    <option value="title" {% if request.GET.sort_by == 'title' %}selected{% endif %}>По названию (А-Я)</option>
+                    <option value="author" {% if request.GET.sort_by == 'author' %}selected{% endif %}>По автору (А-Я)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search"></i> Применить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="custom-table-container">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Инв. №</th>
+                <th style="width: 12%;">Шифр</th>
+                <th style="width: 15%;">Автор</th>
+                <th style="width: 35%;">Название</th>
+                <th style="width: 15%;">Раздел</th>
+                <th style="width: 10%;">Год</th>
+                <th style="width: 15%;">Местонахождение</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            <tr class="clickable-row" onclick="window.location='{% url 'book_detail' pk=book.id %}'" title="Кликните для просмотра: {{ book.title }}">
+                <td class="col-inv">{{ book.inventory_number }}</td>
+                <td class="col-cipher">{{ book.cipher }}</td>
+                <td title="{{ book.author|default:'' }}">{{ book.author|default:"—" }}</td>
+                <td class="col-title" title="{{ book.title }}">{{ book.title }}</td>
+                <td title="{{ book.section|default:'' }}">{{ book.section|default:"—" }}</td>
+                <td class="col-center fw-bold">{{ book.publication_year|default:"—" }}</td>
+                <td title="{{ book.address }}">{{ book.address }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    По вашему запросу книги не найдены.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if user.is_authenticated %}
+<div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="statsModalLabel">
+                    <i class="bi bi-pie-chart"></i> Статистика
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="m-0">Общее количество книг:</h6>
+                    <span class="badge bg-success fs-6">{{ total_books|default:"0" }}</span>
+                </div>
+                
+                <hr>
+                
+                <h6 class="mb-3 text-muted">По категориям:</h6>
+                <ul class="list-group mb-2">
+                    {% for category in categories_stats %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ category.name }}
+                            <span class="badge bg-primary rounded-pill">{{ category.total }}</span>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-center text-muted">
+                            <em>Нет данных</em>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if books.has_other_pages %}
+<nav aria-label="Навигация по страницам" class="mt-4">
+    <ul class="pagination justify-content-center shadow-sm">
+        
+        {% if books.has_previous %}
+        <li class="page-item">
+            <a class="page-line page-link" href="?page={{ books.previous_page_number }}{% if url_params %}&{{ url_params }}{% endif %}" aria-label="Назад">
+                <span aria-hidden="true">&laquo; Назад</span>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&laquo; Назад</span></li>
+        {% endif %}
+
+        {% for num in books.paginator.page_range %}
+            {% if books.number == num %}
+            <li class="page-item active" aria-current="page">
+                <span class="page-link bg-primary border-primary">{{ num }}</span>
+            </li>
+            {% elif num > books.number|add:'-3' and num < books.number|add:'-0' or num > books.number|add:'0' and num < books.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if url_params %}&{{ url_params }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if books.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ books.next_page_number }}{% if url_params %}&{{ url_params }}{% endif %}" aria-label="Вперед">
+                <span aria-hidden="true">Вперед &raquo;</span>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Вперед &raquo;</span></li>
+        {% endif %}
+        
+    </ul>
+</nav>
+<div class="text-center text-muted small mt-2">
+    Страница {{ books.number }} из {{ books.paginator.num_pages }}
+</div>
+{% endif %}
+{% endblock %}
