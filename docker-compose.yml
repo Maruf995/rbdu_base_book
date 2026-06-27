@@ -5,7 +5,7 @@ services:
     restart: always
     env_file: .env
     volumes:
-      - postgres_data_shared:/var/lib/postgresql/data
+      - rbdu_base_book_postgres_data:/var/lib/postgresql/data
 
   # ===================== BOOK =====================
   web_book:
@@ -22,7 +22,6 @@ services:
       sh -c "
       echo 'BOOK: wait db...' &&
       sleep 10 &&
-      python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
       python create_superuser.py &&
       exec gunicorn library_system.wsgi:application --bind 0.0.0.0:8000
@@ -43,7 +42,6 @@ services:
       sh -c "
       echo 'READERS: wait db...' &&
       sleep 10 &&
-      python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
       python create_superuser.py &&
       exec gunicorn rbdu_base_readers.wsgi:application --bind 0.0.0.0:8000
@@ -66,6 +64,7 @@ services:
       - web_readers
 
 volumes:
-  postgres_data_shared:
+  rbdu_base_book_postgres_data:
+      external: true # Важно: это говорит Docker, что том уже существует
   static_volume_book:
   static_volume_readers:
